@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hexa tile with a capital F</title>
+    <script>
+        window.onload = () => {
+            let i = new Image();
+            i.src = "../src/assets/basicF.svg"
+            i.addEventListener('load', () => {
+                createTile(i)
+            })
+        }
+
+        function createTile(i) {
+            let sourceCanvas = drawImageOnCanvas(i)
+
+            const d = i.width;
+            const h = i.height
+
+            // paste fragment on a canvas of the same size, but clip it to
+            // an equilateral triangle
+            let triangleCanvas = document.querySelector('#triangleCanvas')
+            ctx = triangleCanvas.getContext("2d");
+            ctx.canvas.width = d
+            ctx.canvas.height = h
+
+            ctx.beginPath();
+            ctx.moveTo(0, Math.ceil(h));
+            ctx.lineTo(d, Math.ceil(h));
+            ctx.lineTo(d / 2, 0);
+            ctx.clip();
+
+            ctx.drawImage(sourceCanvas, 0, 0)
+
+            // create tile canvas
+            let tileCanvas = document.querySelector('#tileCanvas')
+            ctx = tileCanvas.getContext("2d");
+            ctx.canvas.width = 3 * d
+            ctx.canvas.height = 2 * h
+
+            createTriangleSymmetryRow(ctx, triangleCanvas)
+
+            // Mirror what we have so far
+            ctx.scale(1, -1)
+            ctx.drawImage(tileCanvas, 0, -2 * h)
+        }
+
+        function drawImageOnCanvas(i) {
+            let sourceCanvas = document.createElement('canvas')
+            let sourceCtx = sourceCanvas.getContext("2d")
+            sourceCtx.canvas.width = i.width
+            sourceCtx.canvas.height = i.height
+            sourceCtx.drawImage(i, 0, 0)
+
+            return sourceCanvas
+        }
+
+        function createTriangleSymmetryRow(ctx, triangleCanvas) {
+            const d = triangleCanvas.width;
+            const h = triangleCanvas.height;
+
+            // The center of the triangle is 2/3 of the height from the top
+            const b = Math.round(h / 3),
+                c = Math.round(2 * h / 3)
+
+            for (let i = 0; i < 7; i++) {
+                ctx.save();
+                if (i % 2) {
+                    ctx.translate((i * d) / 2, b);
+                    ctx.scale(-1, 1);
+                } else {
+                    ctx.translate((i * d) / 2, c);
+                }
+                ctx.rotate((i * Math.PI) / 3);
+                ctx.drawImage(triangleCanvas, -d / 2, -c);
+                ctx.restore();
+            }
+        }
+    </script>
+    <style>
+        canvas {
+            max-width: 80%;
+            background: rgba(43, 177, 49, 0.8);
+            padding: 20px;
+            /* filter: invert(100) */
+        }
+
+        canvas:not(#tileCanvas) {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="tileCanvas"></canvas>
+    <canvas id="triangleCanvas"></canvas>
+</body>
+
+</html>

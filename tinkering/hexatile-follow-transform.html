@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hexa tile with a capital F</title>
+    <script>
+        var sourceCanvas, sourceCtx;
+
+        window.onload = () => {
+            let i = new Image();
+            i.src = "../src/assets/basicF.svg"
+            i.addEventListener('load', () => {
+                followTransform(i)
+            })
+
+        }
+
+        function followTransform(i) {
+            drawImageOnCanvas('#canvas', i)
+
+            const d = i.width;
+            const h = i.height
+
+            let triangleCanvas = document.querySelector('#triangleCanvas')
+            ctx = triangleCanvas.getContext("2d");
+            ctx.canvas.width = d
+            ctx.canvas.height = h
+            ctx.beginPath();
+            ctx.moveTo(0, Math.ceil(h));
+            ctx.lineTo(d, Math.ceil(h));
+            ctx.lineTo(d / 2, 0);
+            ctx.clip();
+
+            ctx.globalAlpha = .5
+
+            let stageCanvas = document.querySelector('#stageCanvas')
+            stageCtx = stageCanvas.getContext("2d");
+            stageCtx.canvas.width = 1400
+            stageCtx.canvas.height = 1000
+
+
+            // RED TRIANGLE
+            let color = "#f00"
+
+            // stageCtx.translate(0, 0)
+            drawTriangleAndAxes(ctx, d, h, color, sourceCanvas, stageCtx)
+
+            // BLUE TRIANGLE
+            color = "#00f"
+
+            // Set transformations
+            stageCtx.translate(800, 600)
+
+            drawTriangleAndAxes(ctx, d, h, color, sourceCanvas, stageCtx)
+
+
+            // GREEN TRIANGLE
+            color = "#0f0"
+
+            // Set transformations
+            stageCtx.scale(-1, 1)
+            stageCtx.rotate(-1 * Math.PI / 6)
+
+            drawTriangleAndAxes(ctx, d, h, color, sourceCanvas, stageCtx)
+
+
+            // YELLOW TRIANGLE
+            color = "#ff0"
+
+            // Set transformations
+            stageCtx.translate(-200, 0)
+            stageCtx.scale(.75, -.75)
+
+            drawTriangleAndAxes(ctx, d, h, color, sourceCanvas, stageCtx)
+        }
+
+        function drawTriangleAndAxes(ctx, d, h, color, sourceCanvas, stageCtx) {
+            drawSourceOnBg(ctx, d, h, color, sourceCanvas)
+            stageCtx.drawImage(ctx.canvas, -d / 2, -2 * h / 3);
+
+            drawAxes(stageCtx, d, h, color, 0.7)
+        }
+
+        function drawAxes(ctx, d, h, color, alpha) {
+            ctx.save()
+            ctx.globalAlpha = alpha
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 6
+
+            let overshoot = 100
+
+            ctx.beginPath()
+            ctx.moveTo(-d / 2 - overshoot, 0)
+            ctx.lineTo(d / 2 + overshoot - 40, 0)
+            ctx.moveTo(0, -2 * h / 3 - overshoot)
+            ctx.lineTo(0, h / 3 + overshoot - 40)
+            ctx.stroke()
+
+            // arrow positive x-axis
+            ctx.moveTo(d / 2 + overshoot + 4, 0)
+            ctx.lineTo(d / 2 + overshoot - 40, -20)
+            ctx.lineTo(d / 2 + overshoot - 40, 20)
+
+            // arrow poisitve y-axis
+            ctx.moveTo(0, h / 3 + overshoot + 4)
+            ctx.lineTo(-20, h / 3 + overshoot - 40)
+            ctx.lineTo(20, h / 3 + overshoot - 40)
+
+            ctx.fill()
+
+            ctx.font = "48px sans-serif";
+            ctx.fillText("X", d / 2 + overshoot + 20, 18);
+            ctx.fillText("Y", -15, h / 3 + overshoot + 50);
+
+            ctx.restore()
+        }
+
+        function drawSourceOnBg(ctx, d, h, color, sourceCanvas) {
+            ctx.clearRect(0, 0, d, h)
+            ctx.fillStyle = color
+            ctx.fillRect(0, 0, d, h)
+            ctx.drawImage(sourceCanvas, 0, 0)
+        }
+
+        function drawImageOnCanvas(canvasSelector, i) {
+            sourceCanvas = document.querySelector(canvasSelector)
+            sourceCtx = sourceCanvas.getContext("2d")
+            sourceCtx.canvas.width = i.width
+            sourceCtx.canvas.height = i.height
+            sourceCtx.drawImage(i, 0, 0)
+        }
+
+
+        function createTriangleSymmetryRow2(ctx, triangleCanvas) {
+            const d = triangleCanvas.width;
+            const h = triangleCanvas.height;
+
+            // The center of the triangle is 2/3 of the height from the top
+            const b = Math.round(h / 3),
+                c = Math.round(2 * h / 3)
+
+            // This works as well, let me explain
+            // translate to the point where you want the (rotational) center of the triangle to be
+            // If you rotate an odd number times pi/3 the triangle will point downwards and the centre
+            // should lie h/3 from the top of the canvas
+            // If you rotate an even number times pi/3 the triangle will point upwards (like the original) and the 
+            // centre should lie 2*h/3 from the top of the canvas
+            for (let i = 0; i < 7; i++) {
+                ctx.save();
+                if (i % 2) {
+                    ctx.translate((i * d) / 2, b);
+                    ctx.scale(-1.01, 1.01); // Avoids tiny slits
+                } else {
+                    ctx.translate((i * d) / 2, c);
+                    ctx.scale(1.01, 1.01); // Avoids tiny slits
+                }
+                ctx.rotate((i * Math.PI) / 3);
+                ctx.drawImage(triangleCanvas, -d / 2, -c);
+                ctx.restore();
+            }
+        }
+    </script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #dde;
+            padding: 0;
+            margin: 20px;
+        }
+
+        canvas {
+            width: 100%;
+            max-width: 1000px;
+            background: rgba(200, 200, 190, 0.8);
+            border: 1px black solid;
+            padding: 4px;
+            /* filter: invert(100) */
+        }
+
+        canvas:not(#stageCanvas) {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="stageCanvas"></canvas>
+    <canvas id="triangleCanvas"></canvas>
+    <canvas id="canvas"></canvas>
+</body>
+
+</html>

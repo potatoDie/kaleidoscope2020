@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hexa tile</title>
+    <script>
+        var sourceCanvas, sourceCtx;
+
+        window.onload = () => {
+            let i = new Image();
+            i.src = "../src/assets/p059.jpg"
+            i.addEventListener('load', () => {
+                createTile(i)
+            })
+
+        }
+
+        // Create a tile based on 
+        // image
+        // triangle (center, size)
+        function createTile(i) {
+            drawImageOnCanvas('#canvas', i)
+
+            // Define triangle on source we're interested  in
+            let m = [500, 600]
+            let d = 800
+            let sqrt3 = Math.sqrt(3)
+            let h = d * sqrt3 / 2
+
+            // get imagedata (minimal rectangle)
+            let imd = sourceCtx.getImageData(m[0] - d / 2, m[1] - h / 2, d, h)
+
+            // paste this on a fragment canvas
+            // we can't use clip here since putImageData ignores clip regions
+            let fragmentCanvas = document.querySelector('#fragmentCanvas')
+            let ctx = fragmentCanvas.getContext("2d");
+            ctx.canvas.width = d
+            ctx.canvas.height = h
+            ctx.putImageData(imd, 0, 0)
+
+            // Intermediate step: paste fragment on a canvas of the same size, but clip it to
+            // an equilateral triangle
+            let triangleCanvas = document.querySelector('#triangleCanvas')
+            ctx = triangleCanvas.getContext("2d");
+            ctx.canvas.width = d
+            ctx.canvas.height = h
+
+            ctx.beginPath();
+            ctx.moveTo(0, Math.ceil(h));
+            ctx.lineTo(d, Math.ceil(h));
+            ctx.lineTo(d / 2, 0);
+            ctx.clip();
+
+            ctx.drawImage(fragmentCanvas, 0, 0)
+
+            // create tile canvas
+            let tileCanvas = document.querySelector('#tileCanvas')
+            ctx = tileCanvas.getContext("2d");
+            ctx.canvas.width = 3 * d
+            ctx.canvas.height = 2 * h
+
+            createTriangleSymmetryRow2(ctx, triangleCanvas)
+            // createTriangleSymmetryRow(ctx, triangleCanvas)
+
+            // Mirror what we have so far
+            ctx.scale(1, -1)
+            ctx.drawImage(tileCanvas, 0, -2 * h)
+        }
+
+        function drawImageOnCanvas(canvasSelector, i) {
+            sourceCanvas = document.querySelector(canvasSelector)
+            sourceCtx = sourceCanvas.getContext("2d")
+            sourceCtx.canvas.width = i.width
+            sourceCtx.canvas.height = i.height
+            sourceCtx.drawImage(i, 0, 0)
+        }
+
+        function createTriangleSymmetryRow(ctx, fCanvas) {
+            // I assume you have a drawing of the symmetries of triangles you want to create a pattern tile
+            // Translate to the point where you want the top of the triangle A to appear
+            // i.e. the top of the gfx of triangleCanvas
+            // Then rotate around A as much as needed as the drawing shows
+            // Then mirror in the y-axis of the coordinate system of that moment for every other triangle
+            // Do that for a row of triangles till you can repeat the pattern
+            // There may be cleverer ways, but this one is quite clear.
+            const d = fCanvas.width;
+            const h = fCanvas.height;
+
+            ctx.drawImage(fCanvas, -d / 2, 0)
+
+            ctx.save()
+            ctx.rotate(-Math.PI / 3)
+            ctx.scale(-1, 1)
+            ctx.drawImage(fCanvas, -d / 2, 0)
+            ctx.restore()
+
+            ctx.save()
+            ctx.translate(1.5 * d, h)
+            ctx.rotate(2 * Math.PI / 3)
+            ctx.drawImage(fCanvas, -d / 2, 0)
+            ctx.restore()
+
+            ctx.save()
+            ctx.translate(1.5 * d, h)
+            ctx.rotate(Math.PI)
+            ctx.scale(-1, 1)
+            ctx.drawImage(fCanvas, -d / 2, 0)
+            ctx.restore()
+
+            ctx.save()
+            ctx.translate(1.5 * d, h)
+            ctx.rotate(-2 * Math.PI / 3)
+            ctx.drawImage(fCanvas, -d / 2, 0)
+            ctx.restore()
+
+            ctx.save()
+            ctx.translate(3 * d, 0)
+            ctx.rotate(Math.PI / 3)
+            ctx.scale(-1, 1)
+            ctx.drawImage(fCanvas, -d / 2, 0)
+            ctx.restore()
+
+            ctx.save()
+            ctx.translate(3 * d, 0)
+            ctx.drawImage(fCanvas, -d / 2, 0)
+            ctx.restore()
+        }
+
+        function createTriangleSymmetryRow2(ctx, triangleCanvas) {
+            const d = triangleCanvas.width;
+            const h = triangleCanvas.height;
+
+            // The center of the triangle is 2/3 of the height from the top
+            const b = Math.round(h / 3),
+                c = Math.round(2 * h / 3)
+
+            // This works as well, let me explain
+            // translate to the point where you want the (rotational) center of the triangle to be
+            // If you rotate an odd number times pi/3 the triangle will point downwards and the centre
+            // should lie h/3 from the top of the canvas
+            // If you rotate an even number times pi/3 the triangle will point upwards (like the original) and the 
+            // centre should lie 2*h/3 from the top of the canvas
+            for (let i = 0; i < 7; i++) {
+                ctx.save();
+                if (i % 2) {
+                    ctx.translate((i * d) / 2, b);
+                    ctx.scale(-1.01, 1.01);
+                } else {
+                    ctx.translate((i * d) / 2, c);
+                    ctx.scale(1.01, 1.01); // Avoids tiny slits
+                }
+                ctx.rotate((i * Math.PI) / 3);
+                ctx.drawImage(triangleCanvas, -d / 2, -c);
+                ctx.restore();
+            }
+        }
+    </script>
+    <style>
+        canvas {
+            max-width: 40%;
+        }
+    </style>
+</head>
+
+<body>
+    <ul>
+        <li>
+            <s>Copy image to canvas</s>
+        </li>
+        <li><s>Restrict copy to triangular area</s></li>
+        <li><s>Kopieer driehoek en maak tegel</s></li>
+    </ul>
+    <canvas id="tileCanvas"></canvas>
+    <canvas id="triangleCanvas"></canvas>
+    <canvas id="canvas"></canvas>
+    <canvas id="fragmentCanvas"></canvas>
+</body>
+
+</html>

@@ -25,16 +25,34 @@
                 />
             </form>
             <form>
+                Mode: <br />
+                <input
+                    type="radio"
+                    id="one"
+                    value="rectangle"
+                    v-model="store.mode"
+                />
+                <label for="one">Rectangle</label>
+                <input
+                    type="radio"
+                    id="two"
+                    value="triangle"
+                    v-model="store.mode"
+                />
+                <label for="two">Triangle</label>
+            </form>
+            <form>
                 <Slider
-                    label="Source tile width"
+                    :label="sourceTileLabel"
                     v-model="visorSize.width"
-                    :min="0"
+                    :min="1"
                     :max="1000"
                 />
                 <Slider
+                    v-show="store.mode == 'rectangle'"
                     label="Source tile height"
                     v-model="visorSize.height"
-                    :min="0"
+                    :min="1"
                     :max="1000"
                 />
             </form>
@@ -52,6 +70,8 @@ import store from "../store.js";
 // import VueSlider from "vue-slider-component";
 // import "vue-slider-component/theme/default.css";
 
+const sqrt3 = Math.sqrt(3);
+
 export default {
     data() {
         return {
@@ -67,7 +87,7 @@ export default {
             },
             visorSize: {
                 width: 600,
-                height: 500,
+                height: 480, // Chosen so an equilateral triangle fits in the visor
             },
             container: {
                 // Determines viewBox dimensions for the crossHairs component
@@ -80,6 +100,13 @@ export default {
             store: store, // global data, shared with other components
         };
     },
+    computed: {
+        sourceTileLabel() {
+            return this.store.mode == "triangle"
+                ? "Source tile size"
+                : "Source tile width";
+        },
+    },
     components: {
         Rotator,
         CrossHairs,
@@ -90,6 +117,9 @@ export default {
     mounted() {
         this.ctx = document.getElementById("canvas_source").getContext("2d");
 
+        if (this.store.mode == "triangle") {
+            this.adjustVisorHeight();
+        }
         this.handleImage();
     },
     watch: {
@@ -100,9 +130,14 @@ export default {
         visorSize: {
             // Perhaps better not to watch but use @change instead of v-model
             handler() {
+                this.adjustVisorHeight();
+
                 this.cutOutTile();
             },
             deep: true,
+        },
+        "store.mode"() {
+            this.adjustVisorHeight();
         },
     },
     methods: {
@@ -179,6 +214,15 @@ export default {
             this.fileName = fileName;
             this.imageSrc = imgData;
             this.handleImage();
+        },
+        adjustVisorHeight() {
+            if (this.store.mode == "triangle") {
+                // Ignore height slider value and calculate height from width
+                // TODO: adjust slider view depending on mode
+                this.visorSize.height = Math.round(
+                    (this.visorSize.width * sqrt3) / 2
+                );
+            }
         },
     },
 };
